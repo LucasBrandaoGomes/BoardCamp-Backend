@@ -8,8 +8,8 @@ export async function PostCategory(req, res){
         {
           name: Joi.string().required()
         });
-    const categoryValidation = categorySchema.validate(req.body)
-    const {error} = categoryValidation
+    const schemaValidation = categorySchema.validate(req.body)
+    const {error} = schemaValidation
 
     if (error){
         const errorMsgs = error.details.map(err => err.message)
