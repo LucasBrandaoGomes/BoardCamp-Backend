@@ -135,3 +135,77 @@ export async function GetRentals(req, res){
     res.sendStatus(error);
   }
 }
+
+export async function EndRental(req, res){
+  const id = req.params.id;
+
+  const rental = await connection.query(
+    `
+      SELECT * FROM rentals 
+      WHERE id = $1
+    `,
+    [id]
+  );
+
+  async function calculateDelayFee(rental){
+
+    const oneDayMiliseconds = 1000 * 60 * 60 * 24;
+    const aux = dayjs().format('YYYY-MM-DD');
+    const currentDate = dayjs(aux)
+    const rentDate = dayjs(rental.rows[0].rentDate);
+    const delay = currentDate.diff(rentDate);
+
+    if (delay > 0) {
+      console.log('entrou no try)')
+      // preço
+      const { rows } = await connection.query(
+        `
+          SELECT games."pricePerDay" FROM games WHERE games.id = $1
+        `,
+        [rental.rows[0].gameId]
+      );
+
+      const gamePrice  = rows[0].pricePerDay;
+      const price = (delay / oneDayMiliseconds) * gamePrice
+      return price
+    }
+    return 0;
+  }
+  
+  try {
+  
+    const currentDate = dayjs().format('YYYY-MM-DD');
+    const delayFee = calculateDelayFee(rental)
+    console.log("delayfee", delayFee)
+
+    await connection.query(
+      `
+        UPDATE rentals SET ("returnDate", "delayFee") = ($1, $2)
+        WHERE id = $3
+      `,
+      [currentDate, delayFee, id]
+    );
+
+    await updateGameStockTotal(rental.gameId, false);
+
+    res.sendStatus(200);
+  } catch (error) {
+    res.sendStatus(error);
+  }
+}
+
+export async function DeleteRental(req, res){
+    const  id  = req.params.id;
+    try {
+      await connection.query(
+        `
+          DELETE FROM rentals 
+          WHERE id = $1
+        `,
+        [id]
+      );
+      res.sendStatus(200);    
+    } catch (error) {
+      res.sendStatus(error);
+    }
+  }
