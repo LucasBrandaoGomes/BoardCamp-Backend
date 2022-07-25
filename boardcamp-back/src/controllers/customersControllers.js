@@ -39,7 +39,7 @@ export async function PostCustomers(req, res){
         const checkCPF = await connection.query(`
             SELECT name, cpf FROM customers WHERE id=$1`, [customer.cpf]);
         if(!checkCPF.rows[0]){
-            await connection.query(`INSERT INTO customers (name,phone,cpf,birthday) VALUES ('${customer.name}', '${customer.phone}', ${customer.cpf}, ${customer.birthday})`)
+            await connection.query(`INSERT INTO customers (name,phone,cpf,birthday) VALUES ('${customer.name}', '${customer.phone}', '${customer.cpf}', '${customer.birthday}')`)
             res.sendStatus(201);
         }else{
             res.sendStatus(409);
@@ -49,7 +49,7 @@ export async function PostCustomers(req, res){
     }
 }
 
-export async function GetCustomers(req, res){
+export async function GetCustomersById(req, res){
     const id = parseInt(req.params.id);
     try{
         const customer = await connection.query(`SELECT * FROM customers WHERE customers.id =$1`, [id])
@@ -61,6 +61,34 @@ export async function GetCustomers(req, res){
     }catch (error){
         res.sendStatus(error);
     };
+}
+
+export async function GetCustomerByCPF(req, res){
+    const { cpf } = req.query;
+    
+    try {
+        if (cpf) {
+
+            const { rows: customerByCPF } = await connection.query(`
+                SELECT *
+                FROM customers c
+                WHERE c.cpf
+                LIKE $1
+            `, [`${cpf}%`]);
+
+            return res.send(customerByCPF);
+        };
+
+        const { rows: customers } = await connection.query(`
+            SELECT *
+            FROM customers
+        `);
+
+        res.send(customers);
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
 }
 
 export async function UpdateCustomers(req, res){
