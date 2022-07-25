@@ -46,7 +46,7 @@ export async function PostRentals(req, res){
     }
 
     // verificando quantidade em estoque
-    
+
     if (checkGame.stockTotal === 0) {
       res.status(400).send('Esse jogo não está disponível para aluguel!');
     }
@@ -82,11 +82,34 @@ export async function PostRentals(req, res){
 
 export async function GetRentals(req, res){
 
-    try{
-        connection.query('SELECT * FROM rentals').then(rentals => {
-        res.send(rentals.rows)});
+  const { customerId, gameId } = req.query;
+  // criano uma query generica 
+  let genericQuery = `
+  SELECT rentals.*, customers.name AS "customerName",
+  games.name AS "gameName",
+  games."categoryId",
+  categories.name AS "categoryName" FROM rentals
+  JOIN customers
+  ON customers.id = rentals."customerId"
+  JOIN games
+  ON games.id = rentals."gameId"
+  JOIN categories
+  ON games."categoryId" = categories.id
+`;
+  //modificando as queries para caso eja passado customerId ou gameId, ou ambos
 
-        }catch (error){
-          res.sendStatus(error)
-        }      
+  if (customerId && gameId) {
+    genericQuery += ` WHERE (rentals."customerId" = ${customerId} AND rentals."gameId" = ${gameId})`;
+  } else if (customerId) {
+    genericQuery += ` WHERE rentals."customerId" = ${customerId}`;
+  } else if (gameId) {
+    genericQuery += ` WHERE rentals."gameId" = ${gameId}`;
+  }
+
+  try {
+    const {rows : rentals } = await connection.query(genericQuery)
+    res.send(rentals);
+  } catch (error) {
+    res.sendStatus(error);
+  }
 }
