@@ -137,7 +137,7 @@ export async function GetRentals(req, res){
 }
 
 export async function EndRental(req, res){
-  const id = req.params.id;
+  const { id } = req.params;
 
   const rental = await connection.query(
     `
@@ -146,6 +146,26 @@ export async function EndRental(req, res){
     `,
     [id]
   );
+
+   // preço por dia do jogo alugado 
+   const { rows } = await connection.query(
+    `
+      SELECT games."pricePerDay" FROM games WHERE games.id = $1
+    `,
+    [rental.rows[0].gameId]
+  );
+  // verificação se existe o aluguel
+  if (!rental){
+    res.sendStatus(404)
+    return;
+  }
+
+  //verificação se o aluguel ja foi finalizado
+
+  if(rental.rows[0].returnDate !== null){
+    res.status(400).send("Aluguel já finalizado")
+    return;
+  }
 
   async function calculateDelayFee(rental){
 
@@ -156,27 +176,17 @@ export async function EndRental(req, res){
     const delay = currentDate.diff(rentDate);
 
     if (delay > 0) {
-      console.log('entrou no try)')
-      // preço
-      const { rows } = await connection.query(
-        `
-          SELECT games."pricePerDay" FROM games WHERE games.id = $1
-        `,
-        [rental.rows[0].gameId]
-      );
-
       const gamePrice  = rows[0].pricePerDay;
       const price = (delay / oneDayMiliseconds) * gamePrice
       return price
     }
     return 0;
   }
-  
+
   try {
   
     const currentDate = dayjs().format('YYYY-MM-DD');
-    const delayFee = calculateDelayFee(rental)
-    console.log("delayfee", delayFee)
+    const delayFee =  await calculateDelayFee(rental);
 
     await connection.query(
       `
@@ -187,16 +197,36 @@ export async function EndRental(req, res){
     );
 
     await updateGameStockTotal(rental.gameId, false);
-
     res.sendStatus(200);
+
   } catch (error) {
     res.sendStatus(error);
   }
 }
 
 export async function DeleteRental(req, res){
-    const  id  = req.params.id;
-    try {
+  const { id } = req.params;
+
+  const rental = await connection.query(
+    `
+      SELECT * FROM rentals 
+      WHERE id = $1
+    `,
+    [id]
+  );
+
+  // verificação se existe o aluguel
+  if (!rental){
+    res.sendStatus(404)
+    return;
+  }
+
+  if(rental.rows[0].returnDate === null){
+    res.status(400).send("Aluguel não finalizado")
+    return;
+  }
+
+  try {
       await connection.query(
         `
           DELETE FROM rentals 
