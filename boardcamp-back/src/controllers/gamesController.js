@@ -5,26 +5,16 @@ export async function PostGames(req, res){
     
     const game = req.body;
     const gameSchema = Joi.object({
-        name: Joi
-            .string()
-            .required(),
+        name: Joi.string().required(),
         image: Joi
-            .string()
-            .uri()
-            .required(),
-        stockTotal: Joi
-            .number()
-            .greater(0)
-            .required(),
-        categoryId: Joi
-            .number()
-            .greater(0)
-            .required(),
-        pricePerDay: Joi
-            .number()
-            .greater(0)
-            .required()
-    });
+          .string()
+          .pattern(/(http[s]?:\/\/.*\.(?:png|jpg|gif|svg|jpeg))/i)
+          .required(),
+        categoryId: Joi.number().required(),
+        stockTotal: Joi.number().greater(0).required(),
+        pricePerDay: Joi.number().greater(0).required()
+      });
+      
 
     const schemaValidation = gameSchema.validate(req.body)
     const { error } = schemaValidation

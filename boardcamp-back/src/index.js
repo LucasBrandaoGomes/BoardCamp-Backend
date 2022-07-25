@@ -17,10 +17,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(json());
 
-app.use(rentalsRoutes);
 app.use(categoriesRoutes);
 app.use(gamesRoutes);
 app.use(customersRoutes)
+app.use(rentalsRoutes);
 
 
 const PORT = process.env.PORT;
