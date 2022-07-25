@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import rentalsRoutes  from './routes/rentalsRoutes.js'
 import categoriesRoutes from './routes/categoriesRoutes.js'
 import gamesRoutes from './routes/gamesRoutes.js'
+import customersRoutes from './routes/customersRoutes.js'
 
 dotenv.config();
 const app = express()
@@ -19,6 +20,7 @@ app.use(json());
 app.use(rentalsRoutes);
 app.use(categoriesRoutes);
 app.use(gamesRoutes);
+app.use(customersRoutes)
 
 
 const PORT = process.env.PORT;
